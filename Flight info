@@ -1,14 +1,49 @@
-String DepTime = columns[10];
-String CRSArrTime = columns[11];
-String ArrTime = columns[12];
-String Cancelled = columns[13];
-String Diverted = columns[14];
-String Distance = columns[15];
+String[] lines;
+
+void setup() {
+  size(800,600);
+
+  lines = loadStrings("flights.csv");
+
+  for (int i = 1; i < lines.length; i++) {
+
+    String[] columns = split(lines[i], ',');
+
+    String flightDate = columns[0];
+    String airline = columns[1];
+    String origin = columns[2];
+    String originState = columns[3];
+    String originWAC = columns[4];
+    String destination = columns[5];
+    String destinationCityName = columns[6];
+    String destinationState = columns[7];
+    String destinationWAC = columns[8];
+    String crsDepTime = columns[9];
+    String DepTime = columns[10];
+    String CRSArrTime = columns[11];
+    String ArrTime = columns[12];
+    String Cancelled = columns[13];
+    String Diverted = columns[14];
+    String Distance = columns[15];
 
 
-println("Actual Departure Time" + DepTime);
-println("Scheduled Arrival Time" + CRSArrTime);
-println("Actual Arrival Time" + ArrTime);
-println("Cancelled" + Cancelled);
-println("Diverted" + Diverted);
-println("Distance Between Airports" + Distance);
+    println("Date: " + flightDate);
+    println("FL num: " + airline);
+    println("Origin: " + origin);
+    println("OriginState: " + origin);
+    println("OriginWAC: " + originWAC);
+    println("Destination: " + destination);
+    println("Destination: " + destinationCityname);
+    println("Destination: " + destinationState);
+    println("Destination: " + destinationWAC);
+    println("CRSDepTime: " + crsDepTime);
+    println("Actual Departure Time" + DepTime);
+    println("Scheduled Arrival Time" + CRSArrTime);
+    println("Actual Arrival Time" + ArrTime);
+    println("Cancelled" + Cancelled);
+    println("Diverted" + Diverted);
+    println("Distance Between Airports" + Distance);
+    
+  }
+}
+
