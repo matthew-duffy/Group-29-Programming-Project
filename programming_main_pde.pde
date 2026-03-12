@@ -1,4 +1,5 @@
 String lines[];
+Flight flights[];
 
 void setup() {
     String flightDate= "";
@@ -63,3 +64,13 @@ void setup() {
   }
 
 }
+
+public class Flight{
+  ArrayList<Flight> data;
+
+    Flight(ArrayList<Flight> data){
+        this.data = data;
+    }
+
+}
+
