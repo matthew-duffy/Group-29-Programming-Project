@@ -43,9 +43,7 @@ void setup() {
     Diverted = columns[15];
     Distance = columns[16];
 
-    
-  }
-     println("Date: " + flightDate);
+         println("Date: " + flightDate);
      println("Airline Code " + airlineCode);
     println("FL num: " + airline);
     println("Origin: " + origin);
@@ -62,4 +60,6 @@ void setup() {
     println("Cancelled" + Cancelled);
     println("Diverted" + Diverted);
     println("Distance Between Airports" + Distance);
+  }
+
 }
