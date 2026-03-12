@@ -1,0 +1,14 @@
+String DepTime = columns[10];
+String CRSArrTime = columns[11];
+String ArrTime = columns[12];
+String Cancelled = columns[13];
+String Diverted = columns[14];
+String Distance = columns[15];
+
+
+println("Actual Departure Time" + DepTime);
+println("Scheduled Arrival Time" + CRSArrTime);
+println("Actual Arrival Time" + ArrTime);
+println("Cancelled" + Cancelled);
+println("Diverted" + Diverted);
+println("Distance Between Airports" + Distance);
