@@ -58,7 +58,7 @@ void setup() {
     Diverted = columns[15];
     Distance = columns[16];
     
-    Flight f = new Flight(flightDate, airlineCode, origin, destination);
+    Flight f = new Flight(flightDate, airline, origin, destination);
     flights.add(f);
   }
   
@@ -90,22 +90,17 @@ void draw() {
 
 // SCREEN 0: FLIGHT LIST 
 void drawFlightListScreen() {
-  fill(255,200,0);
-  textSize(16);
-  text("FLIGHT", 50, 40);
-  text("TIME", 300, 40);
-  text("DESTINATION", 400, 40);
   
-  stroke(255);
-  line(40, 50, 700, 50);
-  
+  // 1. DRAW THE SCROLLING LIST FIRST
   pushMatrix();
   translate(0, scrollY);  // Apply scroll offset
   
   textSize(12);
   for (int i = 0; i < flights.size(); i++) {
     Flight f = flights.get(i);
-    float y = 30 + (i * itemHeight);
+    
+    // Shifted the starting Y down to 80 so it starts below the header
+    float y = 80 + (i * itemHeight); 
     
     // Only draw if visible
     if (y + scrollY > -itemHeight && y + scrollY < height) {
@@ -122,6 +117,23 @@ void drawFlightListScreen() {
     }
   }
   popMatrix();
+  
+  // 2. DRAW A SOLID BACKGROUND FOR THE HEADER
+  fill(0); 
+  noStroke();
+  rect(0, 0, width, 60); 
+  
+  fill(255, 200, 0);
+  textSize(14);
+  
+  // Aligned to match the x-coordinates in Flight.display()
+  text("AIRLINE", 50, 40);
+  text("DATE", 200, 40);
+  text("ORIGIN", 350, 40);
+  text("DESTINATION", 400, 40);
+  
+  stroke(255);
+  line(40, 50, 700, 50); // Underline for the header
 }
 
 
