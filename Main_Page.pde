@@ -34,34 +34,36 @@ void setup() {
   for (int i = 1; i < lines.length; i++) {
 
     String[] columns = split(lines[i], ',');
-    if (columns.length < 17) continue;
+    if (columns.length < 19) continue;
     
 
     flightDate = columns[0];
     airlineCode = columns[1];
     airline = columns[2];
     origin = columns[3];
-    originState = columns[4];
-    originWAC = columns[5];
-    destination = columns[6];
-    destinationCityName = columns[7];
-    destinationState = columns[8];
-    destinationWAC = columns[9];
-    crsDepTime = columns[10];
-    DepTime = columns[11];
-    CRSArrTime = columns[12];
-    ArrTime = columns[13];
-    Cancelled = columns[14];
-    Diverted = columns[15];
-    Distance = columns[16];
+    originState = columns[6];
+    originWAC = columns[7];
+    destination = columns[8];
+    destinationCityName = columns[9];
+    destinationState = columns[10];
+    destinationWAC = columns[12];
+    crsDepTime = columns[13];
+    DepTime = columns[14];
+    CRSArrTime = columns[15];
+    ArrTime = columns[16];
+    Cancelled = columns[17];
+    Diverted = columns[18];
+    Distance = columns[19];
     
     Flight f = new Flight(
-    flightDate, airline,origin,destination);
+    flightDate, airlineCode, airline,origin, originState, originWAC,destination,
+    destinationCityName, destinationState, destinationWAC, crsDepTime, DepTime,
+    CRSArrTime, ArrTime, Cancelled, Diverted, Distance);
     flights.add(f);
   }
   
   println("Flights loaded: "+flights.size());
-  /*println("Date: " + flightDate);
+  println("Date: " + flightDate);
   println("Airline Code " + airlineCode);
   println("FL num: " + airline);
   println("Origin: " + origin);
@@ -77,32 +79,22 @@ void setup() {
   println("Actual Arrival Time" + ArrTime);
   println("Cancelled" + Cancelled);
   println("Diverted" + Diverted);
-  println("Distance Between Airports" + Distance);*/
+  println("Distance Between Airports" + Distance);
 }
 
 
 
 void draw() {
-  background(0);
+  background(200);
   
-  fill(255,200,0);
-  textSize(16);
-  text("FLIGHT", 50, 40);
-  text("TIME", 300, 40);
-  text("DESTINATION", 400, 40);
   
-  stroke(255);
-  line(40, 50, 700, 50);
-  
-  fill(0,255,0);
 
-  textSize(14);
   
   pushMatrix();
   translate(0, scrollY);  // Apply scroll offset
   
   fill(255);
-  textSize(12);
+  
 
   textSize(12);
   for (int i = 0; i < flights.size(); i++) {
@@ -124,31 +116,94 @@ void draw() {
     }
   }
   popMatrix();
+  
+  //Display header
+  fill(200, 200, 200);
+  noStroke();
+  rect(0, 0, width, 20);
+  
+  fill(200, 200,0);
+  textSize(12);
+  text("AIRLINE", 20, 10);
+  text("DATE", 120, 10);
+  text("ORIGIN", 180, 10);
+  text("STATE", 230, 10);
+  text("DESTINATION", 280, 10);
+  text("STATE", 370, 10);
+  text("DEP TIME", 500, 10);
+  text("ARR TIME", 560, 10);
+  text("DISTANCE", 610, 10);
+  text("DIVERTED", 670, 10);
+  text("CANCELLED", 730, 10);
+  
+
 }
 
 class Flight {
 
-  String flightDate;
-  String airlineCode;
-  String origin;
-  String destination;
+  String flightDate;     
+  String airlineCode;        
+  String airline;            
+  String origin;          
+  String originState;        
+  String originWAC;          
+  String destination;        
+  String destinationCityName;
+  String destinationState;   
+  String destinationWAC;     
+  String crsDepTime;         
+  String depTime;            
+  String CRSArrTime;         
+  String arrTime;            
+  String cancelled;          
+  String diverted;           
+  String distance;        
+  
 
-  Flight(String fDate, String aCode, String orig, String dest) {
+  Flight(String fDate, String aCode, String airl, String orig,
+   String origState, String origWAC, String dest, String destC, String destS,
+   String destWAC, String crsDep, String depT, String crsArr, String arrT,
+   String cancel, String divert, String dist) {
     flightDate = fDate;
     airlineCode = aCode;
+    airline = airl;
     origin = orig;
+    originState = origState;
+    originWAC = origWAC;
     destination = dest;
+    destinationCityName = destC;
+    destinationState = destS;
+    destinationWAC = destWAC;
+    crsDepTime = crsDep;
+    depTime = depT;
+    CRSArrTime = crsArr;
+    arrTime = arrT;
+    cancelled = cancel;
+    diverted = divert;
+    distance = dist;
   }
 
   void display(int y) {
-    text(airlineCode, 50,y);
-    text(flightDate,200,y);
-    text(origin,350,y);
-    text(destination,400,y);
+    text(flightDate,100,y);
+    text(airlineCode, 20,y);
+    text(origin,200,y);
+    text(originState, 230, y);
+    text(destinationCityName,270,y);
+    text(destinationState, 370, y);
+    text(depTime, 520, y);
+    text(arrTime, 570, y);
+    text(distance, 620, y);
+    
+    //Diverted and canceled are 1 in the file
+    if(diverted == "1"){text("yes", 690, y);}
+    else{text("no", 690, y);}
+    if(cancelled == "1"){text("yes", 750, y);}
+    else{text("no", 750, y);}
   }
 }
 
 void mouseWheel(MouseEvent event) {
+  // Controls scrolling
   float e = event.getCount();
   scrollY -= e * scrollSpeed;
   
@@ -156,4 +211,3 @@ void mouseWheel(MouseEvent event) {
   float maxScroll = -((flights.size() * itemHeight) - height + 50);
   scrollY = constrain(scrollY, maxScroll, 0);
 }
-
