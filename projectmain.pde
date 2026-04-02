@@ -357,10 +357,32 @@ void drawHourlyChart() {
   for (int i = 0; i < 24; i++) {
     float barHeight = map(hourlyCounts[i], 0, maxCount, 0, chartHeight);
     int x = chartX + i * (barWidth + gap);
+    float y = chartY - barHeight;
 
     fill(0, 200, 255);
     rect(x, chartY - barHeight, barWidth, barHeight);
+    
+    boolean hovering = mouseX >= x && mouseX <= x + barWidth &&
+                       mouseY >= y && mouseY <= chartY;
 
+    if (hovering) {
+      fill(255, 180, 0); 
+    } else {
+      fill(0, 200, 255); 
+    }
+
+    rect(x, y, barWidth, barHeight);
+
+    fill(255);
+    textAlign(CENTER);
+    text(i, x + barWidth/2, chartY + 15);
+
+    if (hovering) {
+      fill(255);
+      textSize(14);
+      text(hourlyCounts[i], x + barWidth/2, y - 10);
+    }
+    
     fill(255);
     textAlign(CENTER);
     text(i, x + barWidth/2, chartY + 15);
