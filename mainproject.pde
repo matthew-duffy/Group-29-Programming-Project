@@ -223,15 +223,15 @@ void drawFlightListScreen() {
   // 4. DRAW COLUMN HEADERS (Clickable - look at mousePressed)
   fill(255, 200, 0);
   textSize(14);
-  text("AIRLINE ⇕", 10, 100);
+  text("AIRLINE ▽", 10, 100);
   text("DATE", 85, 100);
-  text("ORIGIN ⇕", 150, 100);
+  text("ORIGIN ▽", 150, 100);
   text("O.ST", 225, 100);
   text("DEST CITY", 270, 100);
   text("D.ST", 420, 100);
-  text("DEP ⇕", 470, 100);
+  text("DEP ▽", 470, 100);
   text("ARR", 520, 100);
-  text("DIST ⇕", 570, 100);
+  text("DIST ▽", 570, 100);
   text("DIV", 630, 100);
   text("CANC", 680, 100);
   
