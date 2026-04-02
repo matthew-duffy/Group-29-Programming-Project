@@ -1,20 +1,28 @@
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Map;
+
 String lines[];
 ArrayList<Flight> flights;
+ArrayList<Flight> displayedFlights; // The subset of data currently being viewed
+
 float scrollY = 0;  // Current scroll position
 float scrollSpeed = 20;  // How fast to scroll
 float itemHeight = 20;  // Height of each flight entry
 
 // SCREEN NAVIGATION VARIABLES
-// 0 = Flight List (Default)
-// 1 = Pie Chart Screen
-// 2 = Hourly Bar Chart Screen
-// To add more screens, just plan for 3, 4, 5, etc.
 int currentScreen = 0; 
 
 // array list to store number of flights each hour
 int[] hourlyCounts = new int[24];
 
-// Moved these out of void setup() so that they can be used for the Flight class
+// SEARCH VARIABLES
+String searchQuery = ""; // Stores what the user types
+
+// Button toggles for specific queries
+boolean showOnlyCancelled = false;
+boolean showOnlyDiverted = false;
+
 String flightDate = "";         
 String airlineCode = "";        
 String airline = "";            
@@ -38,48 +46,43 @@ void setup() {
   ellipseMode(CENTER);
 
   flights = new ArrayList<Flight>();
+  displayedFlights = new ArrayList<Flight>(); // Initialize the display list
 
   lines = loadStrings("flights.csv");
 
   for (int i = 1; i < lines.length; i++) {
-    // Advanced split: splits on commas but ignores commas inside quotation marks
     String[] columns = lines[i].split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)");
-    if (columns.length < 18) continue; // Ensure we have all 18 columns
+    if (columns.length < 18) continue; 
     
-    flightDate = columns[0];
-    airlineCode = columns[1];
-    airline = columns[2];
-    origin = columns[3];
-    // columns[4] is Origin City Name
-    originState = columns[5];
-    // columns[6] is Origin WAC
-    destination = columns[7];
-    destinationCityName = columns[8];
-    destinationState = columns[9];
-    // columns[10] is Destination WAC
-    crsDepTime = columns[11];
-    DepTime = columns[12];
-    // columns[13] is CRS Arr Time
-    ArrTime = columns[14];
-    Cancelled = columns[15];
-    Diverted = columns[16];
-    Distance = columns[17];
+    flightDate = columns[0].trim();
+    airlineCode = columns[1].trim();
+    airline = columns[2].trim();
+    origin = columns[3].trim();
+    originState = columns[5].trim();
+    destination = columns[7].trim();
+    destinationCityName = columns[8].trim();
+    destinationState = columns[9].trim();
+    crsDepTime = columns[11].trim();
+    DepTime = columns[12].trim();
+    ArrTime = columns[14].trim();
+    Cancelled = columns[15].trim();
+    Diverted = columns[16].trim();
+    Distance = columns[17].trim();
     
-    // Pass ALL needed variables into the Flight object
     Flight f = new Flight(flightDate, airlineCode, origin, destination, originState, destinationCityName, destinationState, crsDepTime, DepTime, ArrTime, Distance, Diverted, Cancelled);
     flights.add(f);
   }
   
-  println("Flights loaded: " + flights.size());
+  // Initially, displayed flights is equal to all flights
+  displayedFlights.addAll(flights);
   
-  // Call function to process flight data and count departures
+  println("Flights loaded: " + flights.size());
   countFlightsByHour();
 }
 
 void draw() {
   background(0);
 
-  // SCREEN ROUTER
   if (currentScreen == 0) {
     drawFlightListScreen();
   } 
@@ -89,20 +92,84 @@ void draw() {
   else if (currentScreen == 2) {
     drawHourlyChart();
   }
-  // HOW TO ADD MORE SCREENS:
-  // 1. Add another else if statement here:
-  // else if (currentScreen == 3) {
-  //   drawMyNewScreen();
-  // }
-  
-  // Draw universal navigation instructions on top of whatever screen is showing
+
   drawNavigationOverlay();
 }
 
+// Function to filter the data based on user input
+void filterFlights() {
+  displayedFlights.clear(); // Empty the current view
+  scrollY = 0; // Reset scroll position so we don't get lost at the bottom
+  
+  String q = searchQuery.toLowerCase();
+  
+  for (Flight f : flights) {
+    // Apply button toggles first (Using startsWith to handle "1" or "1.00")
+    if (showOnlyCancelled && !f.Cancelled.startsWith("1")) continue;
+    if (showOnlyDiverted && !f.Diverted.startsWith("1")) continue;
+    
+    if (searchQuery.length() == 0) {
+      // If search is empty but matches button filters, show it
+      displayedFlights.add(f);
+    } else {
+      // Check if the query matches airline, origin, destination, or city
+      if (f.airlineCode.toLowerCase().contains(q) || 
+          f.origin.toLowerCase().contains(q) || 
+          f.destination.toLowerCase().contains(q) || 
+          f.destinationCityName.toLowerCase().contains(q) ||
+          f.originState.toLowerCase().contains(q)) {
+        
+        displayedFlights.add(f);
+      }
+      else if(q.contains("dep") && !f.Cancelled.startsWith("1") && !f.Diverted.startsWith("1") && q.equals("dep" + f.DepTime)){
+            if(q.contains(f.DepTime.toLowerCase())){
+                displayedFlights.add(f);
+              }
+      }
+      else if(q.contains("arr") && !f.Cancelled.startsWith("1") && !f.Diverted.startsWith("1") && q.equals("arr" + f.ArrTime)){
+          if(q.contains(f.ArrTime.toLowerCase())){
+              displayedFlights.add(f);
+          }
+      }
+    }
+  }
+  
+  // Re-calculate the hourly chart based on the new subset!
+  countFlightsByHour();
+}
+
+// Sort function for ordering requirements
+void sortFlights(String sortBy) {
+  if (sortBy.equals("AIRLINE")) {
+    Collections.sort(displayedFlights, new Comparator<Flight>() {
+      public int compare(Flight f1, Flight f2) { return f1.airlineCode.compareTo(f2.airlineCode); }
+    });
+  } else if (sortBy.equals("ORIGIN")) {
+    Collections.sort(displayedFlights, new Comparator<Flight>() {
+      public int compare(Flight f1, Flight f2) { return f1.origin.compareTo(f2.origin); }
+    });
+  } else if (sortBy.equals("DEP")) {
+    Collections.sort(displayedFlights, new Comparator<Flight>() {
+      public int compare(Flight f1, Flight f2) { 
+        int d1 = f1.DepTime.equals("") ? 9999 : Integer.parseInt(f1.DepTime);
+        int d2 = f2.DepTime.equals("") ? 9999 : Integer.parseInt(f2.DepTime);
+        return Integer.compare(d1, d2); 
+      }
+    });
+  } else if (sortBy.equals("DIST")) {
+    Collections.sort(displayedFlights, new Comparator<Flight>() {
+      public int compare(Flight f1, Flight f2) { 
+        // Handles "1069.00" style distances safely
+        float d1 = f1.Distance.equals("") ? 0 : Float.parseFloat(f1.Distance);
+        float d2 = f2.Distance.equals("") ? 0 : Float.parseFloat(f2.Distance);
+        return Float.compare(d1, d2); 
+      }
+    });
+  }
+}
 
 // SCREEN 0: FLIGHT LIST 
 void drawFlightListScreen() {
-  // Reset text alignment because other screens change it!
   textAlign(LEFT, BASELINE);
   
   // 1. DRAW THE SCROLLING LIST FIRST
@@ -110,15 +177,14 @@ void drawFlightListScreen() {
   translate(0, scrollY);  // Apply scroll offset
   
   textSize(12);
-  for (int i = 0; i < flights.size(); i++) {
-    Flight f = flights.get(i);
+  for (int i = 0; i < displayedFlights.size(); i++) {
+    Flight f = displayedFlights.get(i);
     
-    // Shifted the starting Y down to 80 so it starts below the header
-    float y = 80 + (i * itemHeight); 
+    // Shifted Y down to 130 to make room for search bar + header + buttons
+    float y = 130 + (i * itemHeight); 
     
     // Only draw if visible
     if (y + scrollY > -itemHeight && y + scrollY < height) {
-      // Alternate row colors for better readability
       if (i % 2 == 0) {
         fill(240);
       } else {
@@ -132,41 +198,72 @@ void drawFlightListScreen() {
   }
   popMatrix();
   
-  // 2. DRAW A SOLID BACKGROUND FOR THE HEADER
+  // 2. DRAW A SOLID BACKGROUND FOR THE HEADER (Expanded for search bar and buttons)
   fill(0); 
   noStroke();
-  rect(0, 0, width, 60); 
+  rect(0, 0, width, 110); 
   
+  // 3. DRAW SEARCH BAR
+  fill(255);
+  textSize(16);
+  // Blinking cursor effect
+  String cursor = (frameCount / 30 % 2 == 0) ? "_" : "";
+  text("Search (Airline, Origin, Dest, City, DepTime(put \"dep\" before), ArrTime(put \"arr\" before): " + searchQuery + cursor, 10, 25);
+  stroke(100);
+  line(10, 35, 750, 35);
+  
+  // DRAW UI FILTER BUTTONS
+  if (showOnlyCancelled) fill(255, 100, 100); else fill(100);
+  rect(10, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Cancelled", 20, 62);
+  
+  if (showOnlyDiverted) fill(100, 100, 255); else fill(100);
+  rect(140, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Diverted", 150, 62);
+  
+  // 4. DRAW COLUMN HEADERS (Clickable - look at mousePressed)
   fill(255, 200, 0);
   textSize(14);
-  
-  // Match the display() column X-coordinates
-  text("AIRLINE", 10, 40);
-  text("DATE", 70, 40);
-  text("ORIGIN", 150, 40);
-  text("O.ST", 210, 40);
-  text("DEST CITY", 260, 40);
-  text("D.ST", 420, 40);
-  text("DEP", 470, 40);
-  text("ARR", 520, 40);
-  text("DIST", 570, 40);
-  text("DIV", 620, 40);
-  text("CANC", 680, 40);
+  text("AIRLINE ⇕", 10, 100);
+  text("DATE", 85, 100);
+  text("ORIGIN ⇕", 150, 100);
+  text("O.ST", 225, 100);
+  text("DEST CITY", 270, 100);
+  text("D.ST", 420, 100);
+  text("DEP ⇕", 470, 100);
+  text("ARR", 520, 100);
+  text("DIST ⇕", 570, 100);
+  text("DIV", 630, 100);
+  text("CANC", 680, 100);
   
   stroke(255);
-  line(10, 50, 750, 50); // Underline for the header
+  line(10, 110, 750, 110); 
 }
 
 // SCREEN 1: CHARTS
 void drawChartScreen() {
   background(255);
   drawPieChart();
+  
+  // Show search bar context on the chart screen too
+  fill(0);
+  textSize(16);
+  textAlign(LEFT);
+  text("Filtering by: " + (searchQuery.equals("") ? "All Flights" : searchQuery) + " Destination", 10, 25);
+  
+    if (showOnlyCancelled) fill(255, 100, 100); else fill(100);
+  rect(10, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Cancelled", 20, 62);
+  
+  if (showOnlyDiverted) fill(100, 100, 255); else fill(100);
+  rect(140, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Diverted", 150, 62);
 }
 
 void drawPieChart() {
   HashMap<String, Integer> stateCount = new HashMap<String, Integer>();
 
-  for (Flight f : flights) {
+  for (Flight f : displayedFlights) {
     String state = f.destination;
     if (stateCount.containsKey(state)) {
       stateCount.put(state, stateCount.get(state) + 1);
@@ -174,35 +271,47 @@ void drawPieChart() {
       stateCount.put(state, 1);
     }
   }
+  
+  ArrayList<Map.Entry<String, Integer>> sortedList = 
+    new ArrayList<Map.Entry<String, Integer>>(stateCount.entrySet());
+    
+    sortedList.sort((a, b) -> b.getValue() - a.getValue());
+    
+    int limit = min(20, sortedList.size());
 
-  float total = flights.size();
-  float angleStart = 0;
+    float total = 0;
+    for (int i = 0; i < limit; i++) {
+    total += sortedList.get(i).getValue();
+   }
+   
+    float angleStart = 0;
+  
+
+  if (total == 0) return; 
+
 
   noStroke();
   textAlign(CENTER, CENTER); 
-  textSize(20);
+  textSize(16);
 
-  int i = 0;
-  for (String state : stateCount.keySet()) {
-    float count = stateCount.get(state);
+
+
+for (int i = 0; i < limit; i++) {
+    String state = sortedList.get(i).getKey();
+    float count = sortedList.get(i).getValue();
     float angle = (count / total) * TWO_PI;
     
-    //colour
     fill((i * 50) % 255, (i * 80) % 255, (i * 110) % 255);
+    arc(400, 320, 300, 300, angleStart, angleStart + angle, PIE);
     
-    //slice
-    arc(400, 300, 300, 300, angleStart, angleStart + angle, PIE);
-    
-    //label;
     float midAngle = angleStart + angle / 2;
     float x = 400 + cos(midAngle) * 150;
-    float y = 300 + sin(midAngle) * 150;
+    float y = 320 + sin(midAngle) * 150;
 
-    fill(0,200,100); // green
+    fill(0,200,100); 
     text(state, x, y);
 
     angleStart += angle;
-    i++;
   }
 }
 
@@ -212,9 +321,8 @@ void countFlightsByHour() {
     hourlyCounts[i] = 0;
   }
 
-  for (Flight f : flights) {
+  for (Flight f : displayedFlights) {
     int hour = f.getDepartureHour();
-
     if (hour != -1) {
       hourlyCounts[hour]++;
     }
@@ -223,13 +331,12 @@ void countFlightsByHour() {
 
 void drawHourlyChart() {
   int chartX = 60;
-  int chartY = 520; // Shifted up slightly to avoid overlapping the nav bar
+  int chartY = 520; 
   int chartHeight = 300;
   int barWidth = 20;
   int gap = 5;
   
   int maxCount = 0;
-  
   for (int i = 0; i < 24; i++) {
     if (hourlyCounts[i] > maxCount) {
       maxCount = hourlyCounts[i];
@@ -237,6 +344,11 @@ void drawHourlyChart() {
   }
 
   if (maxCount == 0) maxCount = 1;
+
+  fill(255);
+  textSize(16);
+  textAlign(LEFT);
+  text("Filtering by: " + (searchQuery.equals("") ? "All Flights" : searchQuery), 10, 25);
 
   stroke(255);
   line(chartX, chartY, chartX, chartY - chartHeight);
@@ -260,17 +372,15 @@ void drawHourlyChart() {
   text("Flights by Departure Hour", chartX, chartY - chartHeight - 20);
 }
 
-
-// HOW TO ADD MORE SCREENS:
-// 2. Create the function that draws your new screen
-// void drawMyNewScreen() {
-//   fill(255);
-//   text("Welcome to screen 4!", 50, 50); etc
-// }
-
-// Draws instructions to tell the user how to switch screens
 void drawNavigationOverlay() {
-  // Always reset alignment just in case
+    if (showOnlyCancelled) fill(255, 100, 100); else fill(100);
+  rect(10, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Cancelled", 20, 62);
+  
+  if (showOnlyDiverted) fill(100, 100, 255); else fill(100);
+  rect(140, 45, 120, 25, 5);
+  fill(255); textSize(12); text("Only Diverted", 150, 62);
+  
   textAlign(LEFT, BASELINE);
   fill(0, 200); 
   noStroke();
@@ -278,36 +388,66 @@ void drawNavigationOverlay() {
   
   fill(255);
   textSize(14);
-  text("1: Flight List | 2: Destination Chart | 3: Hourly Chart", 10, height - 10);
-  // can update these instructions to tell users to press '4'
+  text(",: Flight List | .: Destination Chart | /: Hourly Chart | Type to Search!", 10, height - 10);
+}
+
+// MOUSE INPUT FOR BUTTONS AND SORTING
+void mousePressed() {
+
+    // 1. Check if user clicked the toggle buttons
+    if (mouseY > 45 && mouseY < 70) {
+      if (mouseX > 10 && mouseX < 130) {
+        showOnlyCancelled = !showOnlyCancelled;
+        filterFlights();
+      } else if (mouseX > 140 && mouseX < 260) {
+        showOnlyDiverted = !showOnlyDiverted;
+        filterFlights();
+      }
+      if (currentScreen == 0) {
+    // 2. Check if user clicked headers to sort
+    if (mouseY > 85 && mouseY < 110) {
+      if (mouseX > 10 && mouseX < 80) sortFlights("AIRLINE");
+      else if (mouseX > 150 && mouseX < 210) sortFlights("ORIGIN");
+      else if (mouseX > 470 && mouseX < 510) sortFlights("DEP");
+      else if (mouseX > 570 && mouseX < 610) sortFlights("DIST");
+    }
+  }
+}
 }
 
 // INPUT HANDLING
 void keyPressed() {
-  // Switch screens based on number keys
-  if (key == '1') {
+  if (key == ',') {
     currentScreen = 0;
   } 
-  else if (key == '2') {
+  else if (key == '.') {
     currentScreen = 1;
   }
-  else if (key == '3') {
+  else if (key == '/') {
     currentScreen = 2;
   }
-  // 3. Add a key trigger to switch to your new screen state
-  // else if (key == '4') {
-  //   currentScreen = 3;
-  // }
+  else if (key == BACKSPACE) {
+    if (searchQuery.length() > 0) {
+      searchQuery = searchQuery.substring(0, searchQuery.length() - 1);
+      filterFlights(); 
+    }
+  }
+  else if (key != CODED && key != ENTER && key != RETURN && key != ESC && key != TAB) {
+    if (String.valueOf(key).matches("[a-zA-Z0-9 ]")) {
+      searchQuery += key;
+      filterFlights(); 
+    }
+  }
 }
 
 void mouseWheel(MouseEvent event) {
-  // Only allow scrolling if we are on the flight list screen (Screen 0)
   if (currentScreen == 0) {
     float e = event.getCount();
     scrollY -= e * scrollSpeed;
     
-    // Prevent scrolling beyond content bounds
-    float maxScroll = -((flights.size() * itemHeight) - height + 50);
+    float maxScroll = -((displayedFlights.size() * itemHeight) - height + 150);
+    if (maxScroll > 0) maxScroll = 0; 
+    
     scrollY = constrain(scrollY, maxScroll, 0);
   }
 }
@@ -345,12 +485,12 @@ class Flight {
   }
 
   int getDepartureHour() {
-    if (crsDepTime == null || crsDepTime.equals("")) {
+    if (DepTime == null || DepTime.equals("")) {
       return -1;
     }
 
     try {
-      int time = Integer.parseInt(crsDepTime);
+      int time = Integer.parseInt(DepTime);
       int hour = time / 100;
 
       if (hour >= 0 && hour < 24) {
@@ -365,28 +505,27 @@ class Flight {
 
   void display(int y) {
     text(airlineCode, 10, y);
-    // Grab just the date portion so it fits nicely
-    text(flightDate.split(" ")[0], 70, y);
+    text(flightDate.split(" ")[0], 85, y);
     text(origin, 150, y);
-    text(originState, 210, y);
+    text(originState, 225, y);
     
-    // Clean quotes off the City Name text
-    text(destinationCityName.replace("\"", ""), 260, y);
+    text(destinationCityName.replace("\"", ""), 270, y);
     text(destinationState, 420, y);
     text(DepTime, 470, y);
     text(ArrTime, 520, y);
     text(Distance, 570, y);
     
-    if(Diverted.equals("1")) {
-      text("yes", 620, y);
+    // Safely checks if the string starts with '1' to cover "1" and "1.00"
+    if(Diverted.startsWith("1")) {
+      text("DIVERTED", 630, y);
     } else {
-      text("no", 620, y);
+      text(" ", 630, y);
     }
     
-    if(Cancelled.equals("1")) {
-      text("yes", 680, y);
+    if(Cancelled.startsWith("1")) {
+      text("CANCELLED", 680, y);
     } else {
-      text("no", 680, y);
+      text(" ", 680, y);
     }
   }
 }
