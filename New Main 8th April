@@ -29,3 +29,70 @@ void filterFlights() {
 
   countFlightsByHour();
 }
+
+
+void drawPieChart() {
+  HashMap<String, Integer> destinationCount = new HashMap<String, Integer>();
+
+  String selectedDeparture = "";
+  if (displayedFlights.size() > 0) {
+    selectedDeparture = displayedFlights.get(0).origin.trim().toUpperCase();
+  }
+
+  for (Flight f : displayedFlights) {
+    String destination = f.destination.trim().toUpperCase();
+    String origin = f.origin.trim().toUpperCase();
+
+    if (destination.equals("")) continue;
+
+    // Skip if destination matches this flight's origin
+    if (destination.equals(origin)) continue;
+
+    // Skip if destination matches the selected departure airport
+    if (destination.equals(selectedDeparture)) continue;
+
+    if (destinationCount.containsKey(destination)) {
+      destinationCount.put(destination, destinationCount.get(destination) + 1);
+    } else {
+      destinationCount.put(destination, 1);
+    }
+  }
+
+  ArrayList<Map.Entry<String, Integer>> sortedList =
+    new ArrayList<Map.Entry<String, Integer>>(destinationCount.entrySet());
+
+  sortedList.sort((a, b) -> b.getValue() - a.getValue());
+
+  int limit = min(20, sortedList.size());
+
+  float total = 0;
+  for (int i = 0; i < limit; i++) {
+    total += sortedList.get(i).getValue();
+  }
+
+  if (total == 0) return;
+
+  float angleStart = 0;
+
+  noStroke();
+  textAlign(CENTER, CENTER);
+  textSize(12);
+
+  for (int i = 0; i < limit; i++) {
+    String destination = sortedList.get(i).getKey();
+    float count = sortedList.get(i).getValue();
+    float angle = (count / total) * TWO_PI;
+
+    fill((i * 50) % 255, (i * 80) % 255, (i * 110) % 255);
+    arc(400, 320, 300, 300, angleStart, angleStart + angle, PIE);
+
+    float midAngle = angleStart + angle / 2;
+    float x = 400 + cos(midAngle) * 110;
+    float y = 320 + sin(midAngle) * 110;
+
+    fill(255);
+    text(destination, x, y);
+
+    angleStart += angle;
+  }
+}
